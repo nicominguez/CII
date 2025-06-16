@@ -94,7 +94,19 @@ class R1cont(Scene):
 
         self.wait(5)
 
-class R1diff(Scene):
+class R1diff(ZoomedScene):
+    def __init__(self, **kwargs):
+        ZoomedScene.__init__(
+            self,
+            zoom_factor=0.3,
+            zoomed_display_height=3,
+            zoomed_display_width=4,
+            zoomed_camera_config={
+                "default_frame_stroke_width": 1,
+            },
+            **kwargs
+        )
+
     def construct(self):
         ax, x_label, y_label = create_axes()
         self.add(ax, x_label, y_label)
@@ -140,7 +152,7 @@ class R1diff(Scene):
         def func2(x):
             return abs(x-5)+4
         self.play(Transform(graph, ax.plot(func2, color=BLUE)))
-
+ 
         dot = Dot(ax.c2p(0,func1(0)))
         def get_tangent2():
             x = ax.p2c(dot.get_center())[0]
@@ -155,3 +167,35 @@ class R1diff(Scene):
         self.add(dot, tangent)
         self.play(MoveAlongPath(dot, graph, run_time=8))
         self.play(FadeOut(dot, tangent))
+
+        zoomed_camera = self.zoomed_camera
+        zoomed_display = self.zoomed_display
+        frame = zoomed_camera.frame
+        zoomed_display_frame = zoomed_display.display_frame
+
+        frame.set_color(PURPLE)
+        zoomed_display_frame.set_color(ORANGE)
+        zoomed_display.to_corner(UP*5+RIGHT)
+        point_of_interest = ax.c2p(5, 4)
+        
+        frame.move_to(point_of_interest)
+
+        self.play(Create(frame))
+        self.activate_zooming() 
+        
+        self.play(self.get_zoomed_display_pop_out_animation())
+        self.wait() 
+
+        tangent.move_to(20) #out of frame
+        self.play(FadeIn(dot, tangent))
+        self.play(MoveAlongPath(dot, ax.plot(func2, color=BLUE, x_range=[4,6])), run_time=5)
+        prob_pt = Dot(ax.c2p(5, func2(5)))
+        self.play(FadeOut(tangent))
+        self.play(Create(prob_pt))
+        self.play(Indicate(prob_pt, color=YELLOW))
+
+        self.play(FadeOut(*self.mobjects))
+        self.clear()
+
+class R2cont(Scene):
+    
