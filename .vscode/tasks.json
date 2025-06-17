@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run MANIM Scene (Prompt for File/Scene)",
+            "type": "shell",
+            "command": "manim -ql ${workspaceFolder}/${input:manimFilePath} ${input:manimSceneName}",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "manimFilePath",
+            "type": "promptString",
+            "description": "Enter the relative path to your Manim Python file (e.g., _2017/eoc/chapter1.py):",
+            "default": "multivar_diff_cont.py"
+        },
+        {
+            "id": "manimSceneName",
+            "type": "promptString",
+            "description": "Enter the name of the Manim Scene class:",
+            "default": "R1"
+        }
+    ]
+}

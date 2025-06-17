@@ -197,5 +197,65 @@ class R1diff(ZoomedScene):
         self.play(FadeOut(*self.mobjects))
         self.clear()
 
-class R2cont(Scene):
-    
+from manim import *
+import numpy as np
+
+class R2cont(ThreeDScene):
+    def construct(self):
+        # Function definition
+        def f(x, y):
+            return np.sin(x) * np.cos(y)
+
+        # Set up axes
+        axes = ThreeDAxes(
+            x_range=[-3, 3, 1],
+            y_range=[-3, 3, 1],
+            z_range=[-1, 1, 0.5],
+        ).scale(0.6)
+        labels = axes.get_axis_labels("x", "y", "f(x,y)")
+        self.add(axes, labels)
+        self.add_fixed_orientation_mobjects(labels)
+
+        # Set camera
+        self.set_camera_orientation(phi=45 * DEGREES, theta=45 * DEGREES)
+        self.begin_ambient_camera_rotation(rate=0.1)
+
+        # Animation: move point in the xy-plane and lift it to f(x,y)
+        dots = []
+        arrows = []
+        for x in np.linspace(-2, 2, 5):
+            for y in np.linspace(-2, 2, 5):
+                input_point = axes.c2p(x, y, 0)
+                output_point = axes.c2p(x, y, f(x, y))
+
+                dot = Dot3D(input_point, color=YELLOW)
+                arrow = Arrow3D(start=input_point, end=output_point, color=BLUE, stroke_width=2)
+
+                # Optional: label the first few input points
+                if x == 0 and y == 0:
+                    label = Tex("input").scale(0.4).next_to(dot, UP)
+                    self.add_fixed_orientation_mobjects(label)
+                    self.play(Create(dot), Write(label), run_time=0.5)
+                    self.play(Create(arrow), dot.animate.move_to(output_point), label.animate.next_to(dot, LEFT), run_time=0.7)
+                    self.remove(label)
+                else:
+                    self.play(Create(dot), Create(arrow), dot.animate.move_to(output_point), run_time=0.3)
+
+                dots.append(dot)
+                arrows.append(arrow)
+
+        # Optional: Show surface after plotting many points
+        surface = Surface(
+            lambda u, v: axes.c2p(u, v, f(u, v)),
+            u_range=[-2, 2],
+            v_range=[-2, 2],
+            resolution=(24, 24),
+        )
+        surface.set_style(fill_opacity=0.6)
+        surface.set_fill_by_checkerboard(ORANGE, BLUE)
+        self.play(FadeIn(surface), run_time=2)
+
+        self.wait(3)
+        self.stop_ambient_camera_rotation()
+
+
