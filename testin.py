@@ -1,27 +1,30 @@
 from manim import *
 
-class SurfaceTest(ThreeDScene):
+class R1cont(Scene):
     def construct(self):
-        ax = ThreeDAxes()
-        self.add(ax)
+        ax = Axes(
+            x_range=[0, 10], 
+            y_range=[0, 10], 
+            x_length=12,
+            y_length=6
+        ).scale(0.8)
+        x_label, y_label = ax.get_axis_labels("x", "f(x)")
+        self.add(ax, x_label, y_label)
 
-        epsilon = 0.001
+        def func1(x):
+            return 10*smooth(x/10)
+        
+        graph = ax.plot(func1, color=RED)
+        graph_label=ax.get_graph_label(graph, "f")
+        self.play(Create(graph), FadeIn(graph_label))
 
-        def func(x, y):  # removable discontinuity at (0, 0)
-            if abs(x) > epsilon or abs(y) > epsilon:
-                return x**2 / (x**2 + y**2)
-            else:
-                return None
+        t = ValueTracker(0)
+        i_pt = ax.c2p(t.get_value(), func1(t.get_value()))
 
-        surface = Surface(
-            lambda u, v: ax.c2p(u, v, func(u, v)),
-            u_range=[-5, 5],
-            v_range=[-5, 5],
-            resolution=(16, 16),
-            fill_color=ORANGE,
-            fill_opacity=0.8,
-            checkerboard_colors=None
-        )
-        self.play(FadeIn(surface))
+        dot = always_redraw(lambda: Dot(ax.c2p(t.get_value(), func1(t.get_value()))))
+        x_pointer = always_redraw(lambda: Vector(UP).move_to(ax.c2p(t.get_value(),-1)))
+        y_pointer = always_redraw(lambda: Vector(RIGHT).move_to(ax.c2p(-2, func1(t.get_value()))))
+
+        self.play(FadeIn(dot, x_pointer, y_pointer))
+        self.play(t.animate.set_value(10))
         self.wait()
-        self.play(FadeOut(surface))
