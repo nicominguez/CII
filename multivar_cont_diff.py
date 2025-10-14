@@ -65,7 +65,7 @@ class R1cont(Scene):
         
         # Ejemplo: discontinuidad evitable
         discont_ev = Tex("Discontinuidad Evitable", color=WHITE).to_corner(UL)
-        self.play(Write(discont_ev))
+        self.play(Write(discont_ev), FadeOut(cont_text))
         def func2(x):
             return (x**2 - 9) / (x - 3) - 2
         func2_expr = MathTex(r"f(x) = \frac{x^2 - 9}{x - 3} - 2", color=YELLOW).to_corner(DOWN*3 + RIGHT*2)
@@ -75,7 +75,7 @@ class R1cont(Scene):
         # Trazo con punto (izquierda y derecha de x=3), mostrando hueco
         dot = Dot(ax.c2p(0, func2(0)))
         hollow = Dot(ax.c2p(3, func2(2.999)), fill_opacity=0, stroke_width=2)
-        self.play(MoveAlongPath(dot, ax.plot(func2, x_range=[0, 3]), run_time=2))
+        self.play(MoveAlongPath(dot, ax.plot(func2, x_range=[0, 2.999]), run_time=2))
         self.add(hollow)
         self.play(MoveAlongPath(dot, ax.plot(func2, x_range=[3.0001, 10]), run_time=2))
         self.play(FadeOut(dot))
@@ -98,14 +98,14 @@ class R1cont(Scene):
         
         # Continuar el trazo ahora que está continua
         dot2 = Dot(ax.c2p(0, func2(0)))
-        self.play(MoveAlongPath(dot2, ax.plot(func2, color=RED), run_time=3))
+        self.play(MoveAlongPath(dot2, ax.plot(func2, x_range=[0, 2.9], color=RED), run_time=3))
         
         # Limpiar objetos de discontinuidad evitable
         self.play(FadeOut(vline, line_label, patch, hollow, func2_expr, dot2))
         
         # Ejemplo: discontinuidad esencial
         discont_es = Tex("Discontinuidad Esencial", color=WHITE).to_corner(UL)
-        self.play(Write(discont_es))
+        self.play(Write(discont_es), FadeOut(discont_ev))
         def func3(x):
             return 1/(x - 5) + 5
         func3_expr = MathTex(r"f(x)=\frac{1}{x-5}+5", color=YELLOW).to_corner(DOWN*3+RIGHT*2)
@@ -129,7 +129,7 @@ class R1cont(Scene):
         self.play(FadeOut(asym, asym_label, text_notC))
         
         # Fin Escena 1
-        self.play(FadeOut(graph, graph_label, cont_text, discont_ev, discont_es, ax, x_label, y_label))
+        self.play(FadeOut(graph, graph_right, graph_label, discont_es, ax, x_label, y_label, text_notC, asym, dot, func3_expr))
         self.wait(1)
 
 # Scene 2: Diferenciabilidad en R¹
@@ -237,71 +237,55 @@ class R1diff(ZoomedScene):
 # Scene 3: Continuidad en R²
 class R2cont(ThreeDScene):
     def construct(self):
-        # Crear ejes 3D y etiquetas
-        ax = ThreeDAxes(x_range=[-2, 2, 1], y_range=[-2, 2, 1], z_range=[0, 8, 2])
-        x_label = Tex("x")
-        y_label = Tex("y").rotate(PI/2)
-        z_label = Tex("f(x,y)").rotate(PI/2, UP)
-        ax_labels = ax.get_axis_labels(x_label, y_label, z_label)
-        self.add(ax, ax_labels)
+        ax = ThreeDAxes().scale(0.6)
+        x_label, y_label, z_label = Tex("x"), Tex("y").rotate(-0.5*PI), Tex("f(x,y)").rotate(PI, UP)
+        self.add(ax, ax.get_axis_labels(x_label, y_label, z_label))
+        self.set_camera_orientation()
+        self.wait(3)
+        self.move_camera(phi=DEGREES*55, theta=DEGREES*45)
+        self.begin_ambient_camera_rotation(rate=0.1)
+        self.wait(3)
+
+        def func(x,y): 
+            if x!=0 or y!=0:
+                return 6*((x+2*y**2) / (x**2+y**2+1)**2)
+            else:
+                return 0 #the limit
+        surface = ax.plot_surface(
+            func,
+            u_range=[-5,5],
+            v_range=[-5,5],
+            resolution=32,
+        ).set_style(fill_color=GREEN, fill_opacity=0.9)
         
-        # Título: Continuidad en R^2
-        title = Tex("Continuidad en $\\mathbb{R}^2$", color=WHITE).to_corner(UL)
-        self.play(Write(title))
-        
-        # Superficie continua: f(x,y) = x^2 + y^2
-        def func_cont(x, y):
-            return x**2 + y**2
-        surface_cont = ax.plot_surface(
-            func_cont, u_range=[-2, 2], v_range=[-2, 2], resolution=24
-        ).set_style(fill_color=BLUE, fill_opacity=0.7)
-        self.play(FadeIn(surface_cont))
+        pt = [2,2,0]
+        dot = Sphere(ax.c2p(*pt), radius=0.05, fill_color=WHITE)
+        self.play(DrawBorderThenFill(dot))
+
+        center, radius = np.array([0,0,0]), 2.8
+        pt_path = ParametricFunction(
+            lambda t: ax.c2p(center[0] + radius * np.cos(t), center[1] + radius * np.sin(t), 0),
+            t_range=[PI/4, 9*PI/4],
+        )
+        self.play(MoveAlongPath(dot, pt_path), run_time=6)
         self.wait(2)
-        
-        # Demostrar entrada 2D -> salida en la superficie
-        dot = Sphere(ax.c2p(1, 1, 0), radius=0.05, fill_color=WHITE)
-        self.play(Create(dot))
+
         dot.generate_target()
-        dot.target.move_to(ax.c2p(1, 1, func_cont(1, 1)))
-        d_line = DashedLine(ax.c2p(1, 1, 0), ax.c2p(1, 1, func_cont(1, 1)), color=YELLOW)
+        dot.target.move_to(ax.c2p(pt[0], pt[1], func(pt[0], pt[1])))
+
+        d_line = DashedLine(ax.c2p(*pt), dot.target)
+
         self.play(MoveToTarget(dot), Create(d_line))
-        self.wait(1)
-        self.play(FadeOut(dot), FadeOut(d_line))
-        
-        # Etiqueta superficie continua
-        cont_label2 = Tex("Superficie continua", color=WHITE).to_corner(DL)
-        self.play(Write(cont_label2))
-        self.wait(1)
-        self.play(FadeOut(cont_label2))
-        
-        # Discontinuidad evitable: superficie plana con un hueco
-        def func_rem(x, y):
-            if abs(x) < 1e-6 and abs(y) < 1e-6:
-                return 2  # valor mal definido en el origen
-            return 1
-        surface_rem = ax.plot_surface(
-            func_rem, u_range=[-2, 2], v_range=[-2, 2], resolution=24
-        ).set_style(fill_color=GREEN, fill_opacity=0.7)
-        self.play(Transform(surface_cont, surface_rem))
-        hole_label = Tex("Discontinuidad evitable en (0,0)", color=WHITE).to_corner(UL)
-        self.play(Write(hole_label))
-        patch_dot = Sphere(ax.c2p(0, 0, 1), radius=0.05, fill_color=DARK_BROWN)
-        self.play(Create(patch_dot))
-        self.wait(1)
-        self.play(FadeOut(patch_dot, hole_label))
-        
-        # Discontinuidad esencial: ejemplo de función sin límite en (0,0)
-        def func_ess(x, y):
-            if abs(x) < 1e-6 and abs(y) < 1e-6:
-                return 0
-            return (x * y) / (x**2 + y**2)
-        surface_ess = ax.plot_surface(
-            func_ess, u_range=[-2, 2], v_range=[-2, 2], resolution=24
-        ).set_style(fill_color=ORANGE, fill_opacity=0.7)
-        self.play(Transform(surface_cont, surface_ess))
-        ess_label = Tex("Discontinuidad esencial en (0,0)", color=WHITE).to_corner(UL)
-        self.play(Write(ess_label))
-        self.wait(2)
-        
-        # Fin Escena 3
-        self.play(FadeOut(*self.mobjects))
+        self.wait()
+        self.play(FadeOut(dot), FadeOut(d_line), FadeIn(surface))
+        self.wait(4)
+
+        line = Line(ax.c2p(pt[0], pt[1], -10), ax.c2p(pt[0], pt[1], 10)).set_color(LIGHT_BROWN)
+        self.play(MoveAlongPath(line, pt_path), run_time=6)
+        self.wait()
+        self.play(FadeOut(line))
+
+        self.stop_ambient_camera_rotation
+        group = VGroup(ax, x_label, y_label, z_label, surface)
+        self.move_camera(phi=DEGREES*55, theta=DEGREES*45)
+        self.play(group.animate.scale(0.8).to_corner(UP*3+LEFT))
