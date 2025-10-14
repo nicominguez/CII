@@ -21,7 +21,7 @@
             "id": "manimFilePath",
             "type": "promptString",
             "description": "Enter the relative path to your Manim Python file (e.g., _2017/eoc/chapter1.py):",
-            "default": "multivar_diff_cont.py"
+            "default": "multivar_cont_diff.py"
         },
         {
             "id": "manimSceneName",
